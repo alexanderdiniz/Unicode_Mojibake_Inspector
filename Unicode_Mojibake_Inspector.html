@@ -1,0 +1,1191 @@
+<!doctype html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unicode &amp; Mojibake Inspector — Amber &amp; Teal Edition</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Mesma paleta personalizada Amber & Teal do Byte Counter
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"Noto Sans"', 'Helvetica', 'Arial', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"'],
+            mono: ['ui-monospace', 'SFMono-Regular', '"SF Mono"', 'Menlo', 'Consolas', '"Liberation Mono"', 'monospace'],
+          },
+          colors: {
+            gh: {
+              darkBg: '#0A0D14',
+              darkCard: '#1C1E24',
+              darkBorder: '#2D2D2D',
+              darkText: '#F4F5F7',
+              darkMuted: '#D6D9DF',
+              darkAccent: '#FF8C00',
+              darkSuccess: '#2DD4BF',
+              darkWarn: '#FFCC00',
+              darkDanger: '#FF5A5F',
+              darkPink: '#FFB000',
+
+              lightBg: '#C6CED8',
+              lightCard: '#D7DFE7',
+              lightBorder: '#A4B0BE',
+              lightText: '#07090E',
+              lightMuted: '#1A2028',
+              lightAccent: '#B85600',
+              lightSuccess: '#075E56',
+              lightWarn: '#854D0E',
+              lightDanger: '#991B1B',
+              lightPink: '#92400E',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <script>
+    // Sincroniza o tema salvo com o Byte Counter
+    (function () {
+      try {
+        const saved = localStorage.getItem('bytecounter-theme');
+        if (saved === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else if (saved === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(139, 148, 158, 0.35); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(139, 148, 158, 0.55); }
+  </style>
+</head>
+<body class="bg-gh-lightBg text-gh-lightText dark:bg-gh-darkBg dark:text-gh-darkText font-sans font-medium dark:font-normal min-h-screen flex flex-col overflow-x-hidden transition-colors duration-200 selection:bg-gh-lightAccent/20 dark:selection:bg-gh-darkAccent/30">
+
+  <!-- Container Principal -->
+  <div class="w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 flex-1 flex flex-col gap-4">
+
+    <!-- Cabeçalho e Ações Globais -->
+    <header class="w-full flex flex-col items-center text-center gap-3 pb-4 border-b border-gh-lightBorder dark:border-gh-darkBorder">
+      <div class="w-full flex flex-col items-center justify-center gap-1 relative">
+        <div class="flex items-center justify-center gap-2.5">
+          <span class="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gh-lightPink/15 text-gh-lightPink dark:bg-gh-darkPink/15 dark:text-gh-darkPink border border-gh-lightPink/30 dark:border-gh-darkPink/30">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0zM11 8v6M8 11h6" />
+            </svg>
+          </span>
+          <h1 class="text-lg sm:text-xl font-bold tracking-tight text-gh-lightAccent dark:text-gh-darkAccent">Unicode &amp; Mojibake Inspector</h1>
+
+          <!-- Botão de Tema no Mobile -->
+          <button id="themeToggleMobile" type="button" title="Alternar tema claro/escuro"
+            class="shrink-0 sm:hidden inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder text-gh-lightText dark:text-gh-darkText hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+            <svg class="w-4 h-4 hidden dark:block text-gh-darkWarn" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <svg class="w-4 h-4 block dark:hidden text-gh-lightAccent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          </button>
+        </div>
+        <p class="text-xs sm:text-sm font-medium text-gh-lightMuted dark:text-gh-darkMuted mt-0.5 max-w-2xl">
+          Raio-X de caracteres invisíveis, reparo de mojibake, normalização NFC/NFD e escapes
+        </p>
+      </div>
+
+      <!-- Barra de Ações Centralizada -->
+      <div class="w-full sm:w-auto grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center gap-2">
+        <button id="themeToggleDesktop" type="button" title="Alternar tema claro/escuro"
+          class="hidden sm:inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+          <svg class="w-4 h-4 hidden dark:block text-gh-darkWarn" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <svg class="w-4 h-4 block dark:hidden text-gh-lightAccent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+          <span class="dark:hidden">Escuro</span>
+          <span class="hidden dark:inline">Claro</span>
+        </button>
+
+        <label for="fileInput"
+          class="w-full sm:w-auto min-w-0 inline-flex items-center justify-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg text-xs font-semibold bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent cursor-pointer transition">
+          <svg class="w-3.5 h-3.5 shrink-0 text-gh-lightAccent dark:text-gh-darkAccent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span class="truncate">Importar</span>
+          <input id="fileInput" type="file" class="hidden" accept=".txt,.md,.json,.csv,.xml,.html,.js,.ts,.css,.log,.sql,.yml,.yaml,*/*" />
+        </label>
+
+        <div class="w-full sm:w-auto min-w-0 inline-flex rounded-lg shadow-sm">
+          <button id="exportBtn" type="button"
+            class="flex-1 sm:flex-initial min-w-0 inline-flex items-center justify-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-l-lg text-xs font-semibold bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+            <svg class="w-3.5 h-3.5 shrink-0 text-gh-lightSuccess dark:text-gh-darkSuccess" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span class="truncate">Exportar</span>
+          </button>
+          <select id="exportFormat" aria-label="Formato de exportação"
+            class="shrink-0 h-9 px-1.5 sm:px-2 rounded-r-lg text-[11px] sm:text-xs font-mono font-bold bg-gh-lightCard dark:bg-gh-darkCard border-y border-r border-gh-lightBorder dark:border-gh-darkBorder text-gh-lightText dark:text-gh-darkText focus:outline-none focus:border-gh-lightAccent dark:focus:border-gh-darkAccent cursor-pointer">
+            <option value="txt" selected>.TXT</option>
+            <option value="json">.JSON</option>
+          </select>
+        </div>
+
+        <button id="copyCleanBtn" type="button"
+          class="w-full sm:w-auto min-w-0 inline-flex items-center justify-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg text-xs font-semibold bg-gh-lightAccent text-white dark:bg-gh-darkAccent dark:text-[#0A0D14] shadow-sm hover:opacity-90 transition">
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <span id="copyCleanBtnText" class="truncate">Copiar Texto</span>
+        </button>
+
+        <button id="clearBtn" type="button"
+          class="w-full sm:w-auto min-w-0 inline-flex items-center justify-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg text-xs font-semibold bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder text-gh-lightDanger dark:text-gh-darkDanger hover:bg-gh-lightDanger/10 dark:hover:bg-gh-darkDanger/10 transition">
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          <span class="truncate">Limpar</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Painel de Comandos de Sanitização, Mojibake e Normalização -->
+    <section class="w-full bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3 sm:p-4 shadow-sm">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-center">
+        <!-- Normalização Unicode -->
+        <div class="lg:col-span-4 flex flex-col items-center gap-1.5 min-w-0">
+          <label for="normForm" class="text-xs font-bold uppercase tracking-wider text-gh-lightAccent dark:text-gh-darkAccent text-center">
+            Normalização Unicode
+          </label>
+          <div class="w-full flex items-center justify-center gap-1.5">
+            <select id="normForm"
+              class="flex-1 min-w-0 h-9 px-2.5 rounded-lg text-xs sm:text-sm font-semibold text-center bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder focus:outline-none focus:border-gh-lightAccent dark:focus:border-gh-darkAccent">
+              <option value="NFC" selected>NFC (Composto — Windows/Web/Linux)</option>
+              <option value="NFD">NFD (Decomposto — macOS)</option>
+              <option value="NFKC">NFKC (Compatibilidade Composta)</option>
+              <option value="NFKD">NFKD (Compatibilidade Decomposta)</option>
+            </select>
+            <button id="applyNormBtn" type="button" title="Aplicar normalização selecionada ao editor"
+              class="shrink-0 h-9 px-3.5 rounded-lg text-xs font-semibold bg-gh-lightAccent/15 text-gh-lightAccent dark:bg-gh-darkAccent/15 dark:text-gh-darkAccent border border-gh-lightAccent/30 dark:border-gh-darkAccent/30 hover:bg-gh-lightAccent hover:text-white dark:hover:bg-gh-darkAccent dark:hover:text-[#0A0D14] transition">
+              Aplicar
+            </button>
+          </div>
+        </div>
+
+        <!-- Ações Rápidas de Correção (1 Clique) -->
+        <div class="lg:col-span-8 flex flex-col items-center gap-1.5 min-w-0">
+          <span class="text-xs font-bold uppercase tracking-wider text-gh-lightAccent dark:text-gh-darkAccent text-center">
+            Comandos de Correção e Sanitização
+          </span>
+          <div class="w-full grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-2">
+            <button id="sanitizeBtn" type="button"
+              class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bg-gh-lightSuccess/15 text-gh-lightSuccess dark:bg-gh-darkSuccess/15 dark:text-gh-darkSuccess border border-gh-lightSuccess/30 dark:border-gh-darkSuccess/30 hover:bg-gh-lightSuccess hover:text-white dark:hover:bg-gh-darkSuccess dark:hover:text-[#0A0D14] transition">
+              <span>Purgar Invisíveis</span>
+            </button>
+
+            <button id="fixMojibakeBtn" type="button"
+              class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bg-gh-lightPink/15 text-gh-lightPink dark:bg-gh-darkPink/15 dark:text-gh-darkPink border border-gh-lightPink/30 dark:border-gh-darkPink/30 hover:bg-gh-lightPink hover:text-white dark:hover:bg-gh-darkPink dark:hover:text-[#0A0D14] transition">
+              <span>Consertar Mojibake</span>
+            </button>
+
+            <button id="normalizeSpacesBtn" type="button"
+              class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+              <span>NBSP → Espaço ASCII</span>
+            </button>
+
+            <button id="stripAccentsBtn" type="button"
+              class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+              <span>Remover Diacríticos</span>
+            </button>
+
+            <button id="fixDoubleMojibakeBtn" type="button"
+              class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bg-gh-lightPink/15 text-gh-lightPink dark:bg-gh-darkPink/15 dark:text-gh-darkPink border border-gh-lightPink/30 dark:border-gh-darkPink/30 hover:bg-gh-lightPink hover:text-white dark:hover:bg-gh-darkPink dark:hover:text-[#0A0D14] transition">
+              <span>Desfazer Duplo-Mojibake</span>
+            </button>
+
+            <button id="smartQuotesBtn" type="button"
+              class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+              <span>Aspas &amp; Travessões ASCII</span>
+            </button>
+
+            <button id="dedupeLinesBtn" type="button"
+              class="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+              <span>Remover Linhas Duplicadas</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cards de Resumo de Diagnóstico -->
+    <section class="w-full grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+      <div class="min-w-0 bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3 sm:p-4 border-t-4 border-t-gh-lightDanger dark:border-t-gh-darkDanger shadow-sm text-center flex flex-col items-center justify-center">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted">Invisíveis / Ocultos</div>
+        <div id="cardInvisible" class="font-mono text-lg sm:text-2xl font-bold text-gh-lightDanger dark:text-gh-darkDanger mt-1 break-all">0</div>
+        <div id="cardInvisibleSub" class="text-[11px] font-mono font-medium text-gh-lightMuted dark:text-gh-darkMuted mt-0.5">Nenhum caractere fantasma</div>
+      </div>
+
+      <div class="min-w-0 bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3 sm:p-4 border-t-4 border-t-gh-lightPink dark:border-t-gh-darkPink shadow-sm text-center flex flex-col items-center justify-center">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted">Status Mojibake</div>
+        <div id="cardMojibake" class="font-mono text-lg sm:text-2xl font-bold text-gh-lightPink dark:text-gh-darkPink mt-1 truncate max-w-full">Íntegro</div>
+        <div id="cardMojibakeSub" class="text-[11px] font-mono font-medium text-gh-lightMuted dark:text-gh-darkMuted mt-0.5 truncate max-w-full">Sem corrupção UTF-8/Latin-1</div>
+      </div>
+
+      <div class="min-w-0 bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3 sm:p-4 border-t-4 border-t-gh-lightAccent dark:border-t-gh-darkAccent shadow-sm text-center flex flex-col items-center justify-center">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted">Code Points</div>
+        <div id="cardCodePoints" class="font-mono text-lg sm:text-2xl font-bold text-gh-lightAccent dark:text-gh-darkAccent mt-1 break-all">0</div>
+        <div id="cardCodeUnitsSub" class="text-[11px] font-mono font-medium text-gh-lightMuted dark:text-gh-darkMuted mt-0.5">0 UTF-16 code units</div>
+      </div>
+
+      <div class="min-w-0 bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3 sm:p-4 border-t-4 border-t-gh-lightSuccess dark:border-t-gh-darkSuccess shadow-sm text-center flex flex-col items-center justify-center">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted">Forma Normalizada</div>
+        <div id="cardNormStatus" class="font-mono text-lg sm:text-2xl font-bold text-gh-lightSuccess dark:text-gh-darkSuccess mt-1 truncate max-w-full">NFC</div>
+        <div id="cardNormSub" class="text-[11px] font-mono font-medium text-gh-lightMuted dark:text-gh-darkMuted mt-0.5">Compatível com NFC/NFD</div>
+      </div>
+    </section>
+
+    <!-- Navegação por Abas Exclusiva para Mobile -->
+    <div class="w-full grid grid-cols-2 gap-1 p-1 rounded-xl bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder lg:hidden">
+      <button id="tabEditorBtn" type="button"
+        class="py-2 px-3 rounded-lg text-xs font-semibold bg-gh-lightAccent text-white dark:bg-gh-darkAccent dark:text-[#0A0D14] transition">
+        Editor &amp; Raio-X
+      </button>
+      <button id="tabInspectorBtn" type="button"
+        class="py-2 px-3 rounded-lg text-xs font-semibold text-gh-lightMuted dark:text-gh-darkMuted transition">
+        Code Points &amp; Escapes
+      </button>
+    </div>
+
+    <!-- Área Principal: Editor + Raio-X Visual (Esquerda) e Mapa de Code Points + Escapes (Direita) -->
+    <main class="w-full grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
+
+      <!-- Coluna Esquerda: Entrada + Visão Raio-X de Caracteres Invisíveis -->
+      <div id="editorPane" class="lg:col-span-6 min-w-0 flex flex-col gap-3">
+        <!-- Bloco do Editor -->
+        <div class="flex flex-col bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl overflow-hidden shadow-sm">
+          <div class="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 px-3 py-2.5 border-b border-gh-lightBorder dark:border-gh-darkBorder bg-gh-lightBg/70 dark:bg-gh-darkBg/50 text-center">
+            <div class="flex flex-wrap items-center justify-center gap-2 min-w-0">
+              <span class="text-xs sm:text-sm font-bold uppercase tracking-wider text-gh-lightAccent dark:text-gh-darkAccent">Texto para Inspeção</span>
+              <span id="fileNameBadge" class="hidden truncate max-w-[160px] sm:max-w-[200px] text-[11px] font-mono px-2 py-0.5 rounded bg-gh-lightAccent/15 text-gh-lightAccent dark:bg-gh-darkAccent/15 dark:text-gh-darkAccent"></span>
+            </div>
+            <div class="flex items-center justify-center gap-1.5">
+              <button id="pasteBtn" type="button"
+                class="px-3 py-1 rounded text-[11px] font-medium bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+                Colar
+              </button>
+            </div>
+          </div>
+
+          <div id="dropZone" class="relative flex flex-col">
+            <textarea
+              id="textInput"
+              class="w-full min-h-[150px] sm:min-h-[180px] p-3.5 bg-transparent text-gh-lightText dark:text-gh-darkText placeholder:text-gh-lightMuted/80 dark:placeholder:text-gh-darkMuted/80 font-mono font-medium text-xs sm:text-sm leading-relaxed resize-y focus:outline-none"
+              placeholder="Cole aqui strings suspeitas, textos com acentos corrompidos ou arraste um arquivo..."
+              spellcheck="false"
+              autofocus
+            ></textarea>
+            <div id="dropOverlay" class="hidden absolute inset-0 bg-gh-lightAccent/15 dark:bg-gh-darkAccent/15 border-2 border-dashed border-gh-lightAccent dark:border-gh-darkAccent flex items-center justify-center pointer-events-none">
+              <span class="px-4 py-2 rounded-lg bg-gh-lightCard dark:bg-gh-darkCard font-semibold text-sm shadow">
+                Solte o arquivo para inspecionar
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visão Raio-X (Revela Caracteres Invisíveis e Controles) -->
+        <div class="flex-1 flex flex-col bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3.5 shadow-sm">
+          <div class="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-2 pb-2 mb-2 border-b border-gh-lightBorder dark:border-gh-darkBorder text-center">
+            <span class="text-xs font-bold uppercase tracking-wider text-gh-lightPink dark:text-gh-darkPink">
+              Visão Raio-X (Revelador de Ocultos)
+            </span>
+            <label class="inline-flex items-center justify-center gap-1.5 text-[11px] text-gh-lightMuted dark:text-gh-darkMuted cursor-pointer select-none">
+              <input type="checkbox" id="showWhitespace" checked class="w-3.5 h-3.5 rounded accent-gh-lightAccent dark:accent-gh-darkAccent" />
+              <span>Mostrar espaços/quebras</span>
+            </label>
+          </div>
+          <div id="xrayOutput" class="flex-1 min-h-[110px] max-h-[220px] overflow-y-auto p-3 rounded-lg bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder font-mono font-medium text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-all">
+            <span class="block text-center text-gh-lightMuted dark:text-gh-darkMuted italic">Aguardando entrada de texto…</span>
+          </div>
+
+          <!-- Amostras de Bugs Reais (Quando vazio) -->
+          <div id="samplesBox" class="mt-3 pt-2.5 border-t border-gh-lightBorder/70 dark:border-gh-darkBorder/70">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-gh-lightMuted dark:text-gh-darkMuted mb-2 text-center">
+              Amostras de Bugs para Testar
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button type="button" data-sample="mojibake"
+                class="sample-btn text-center px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+                Mojibake (AtenÃ§Ã£o)
+              </button>
+              <button type="button" data-sample="zerowidth"
+                class="sample-btn text-center px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+                Zero-Width / NBSP
+              </button>
+              <button type="button" data-sample="nfd"
+                class="sample-btn text-center px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+                NFD vs NFC (café)
+              </button>
+              <button type="button" data-sample="emoji"
+                class="sample-btn text-center px-2.5 py-1.5 rounded-lg text-[11px] font-semibold bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder hover:border-gh-lightAccent dark:hover:border-gh-darkAccent transition">
+                Emoji ZWJ + Bandeira
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna Direita: Mapa de Code Points + Escapes para Programação -->
+      <aside id="inspectorPane" class="hidden lg:flex lg:col-span-6 min-w-0 flex-col gap-3 bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder rounded-xl p-3.5 sm:p-4 shadow-sm overflow-y-auto">
+        <!-- Cabeçalho do Mapa de Code Points -->
+        <div class="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-1 border-b border-gh-lightBorder dark:border-gh-darkBorder pb-2 text-center">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-gh-lightPink dark:text-gh-darkPink">
+            Mapa de Code Points (Caractere a Caractere)
+          </h2>
+          <span id="cpLimitTag" class="text-[11px] font-mono text-gh-lightMuted dark:text-gh-darkMuted">0 itens</span>
+        </div>
+
+        <!-- Grade Interativa de Code Points -->
+        <div id="codePointGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[250px] overflow-y-auto pr-1">
+          <div class="col-span-full text-center py-6 text-xs text-gh-lightMuted dark:text-gh-darkMuted">
+            Digite ou cole um texto para inspecionar cada Unicode Code Point.
+          </div>
+        </div>
+
+        <!-- Painel de Escapes para Código -->
+        <div class="mt-1 pt-3 border-t border-gh-lightBorder dark:border-gh-darkBorder flex flex-col gap-2">
+          <div class="flex items-center justify-center">
+            <span class="text-xs font-bold uppercase tracking-wider text-gh-lightAccent dark:text-gh-darkAccent text-center">
+              Escapes &amp; Representações para Código
+            </span>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <!-- JS / JSON \uXXXX -->
+            <div class="p-2 rounded-lg bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold uppercase text-gh-lightMuted dark:text-gh-darkMuted">JavaScript / JSON (\uXXXX)</span>
+                <button type="button" data-copy-target="escJs" class="copy-esc-btn text-[10px] font-mono font-bold text-gh-lightAccent dark:text-gh-darkAccent hover:underline">Copiar</button>
+              </div>
+              <div id="escJs" class="font-mono font-semibold text-[11px] break-all text-gh-lightSuccess dark:text-gh-darkSuccess max-h-14 overflow-y-auto">—</div>
+            </div>
+
+            <!-- Python / C Hex \xXX -->
+            <div class="p-2 rounded-lg bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold uppercase text-gh-lightMuted dark:text-gh-darkMuted">UTF-8 Hex Literal (\xXX)</span>
+                <button type="button" data-copy-target="escHex" class="copy-esc-btn text-[10px] font-mono font-bold text-gh-lightAccent dark:text-gh-darkAccent hover:underline">Copiar</button>
+              </div>
+              <div id="escHex" class="font-mono font-semibold text-[11px] break-all text-gh-lightSuccess dark:text-gh-darkSuccess max-h-14 overflow-y-auto">—</div>
+            </div>
+
+            <!-- Entidades HTML -->
+            <div class="p-2 rounded-lg bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold uppercase text-gh-lightMuted dark:text-gh-darkMuted">HTML Entities (&amp;#xXXXX;)</span>
+                <button type="button" data-copy-target="escHtml" class="copy-esc-btn text-[10px] font-mono font-bold text-gh-lightAccent dark:text-gh-darkAccent hover:underline">Copiar</button>
+              </div>
+              <div id="escHtml" class="font-mono font-semibold text-[11px] break-all text-gh-lightSuccess dark:text-gh-darkSuccess max-h-14 overflow-y-auto">—</div>
+            </div>
+
+            <!-- URL Percent Encoding -->
+            <div class="p-2 rounded-lg bg-gh-lightBg dark:bg-gh-darkBg border border-gh-lightBorder dark:border-gh-darkBorder">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-bold uppercase text-gh-lightMuted dark:text-gh-darkMuted">URL Percent-Encoding (%XX)</span>
+                <button type="button" data-copy-target="escUrl" class="copy-esc-btn text-[10px] font-mono font-bold text-gh-lightAccent dark:text-gh-darkAccent hover:underline">Copiar</button>
+              </div>
+              <div id="escUrl" class="font-mono font-semibold text-[11px] break-all text-gh-lightSuccess dark:text-gh-darkSuccess max-h-14 overflow-y-auto">—</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Barra de Status Inferior -->
+    <footer class="w-full flex flex-col sm:flex-row items-center justify-between gap-1.5 px-3 py-2 rounded-lg bg-gh-lightCard dark:bg-gh-darkCard border border-gh-lightBorder dark:border-gh-darkBorder text-xs font-semibold text-gh-lightMuted dark:text-gh-darkMuted text-center sm:text-left">
+      <div id="statusBar">Pronto — Suíte complementar ao Byte Counter</div>
+      <div class="font-mono text-[11px]">Atalho: Ctrl/Cmd + Enter para inspecionar</div>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Referências DOM ----------
+  const $textInput = document.getElementById("textInput");
+  const $normForm = document.getElementById("normForm");
+  const $applyNormBtn = document.getElementById("applyNormBtn");
+  const $sanitizeBtn = document.getElementById("sanitizeBtn");
+  const $fixMojibakeBtn = document.getElementById("fixMojibakeBtn");
+  const $normalizeSpacesBtn = document.getElementById("normalizeSpacesBtn");
+  const $stripAccentsBtn = document.getElementById("stripAccentsBtn");
+  const $fixDoubleMojibakeBtn = document.getElementById("fixDoubleMojibakeBtn");
+  const $smartQuotesBtn = document.getElementById("smartQuotesBtn");
+  const $dedupeLinesBtn = document.getElementById("dedupeLinesBtn");
+  const $fileInput = document.getElementById("fileInput");
+  const $fileNameBadge = document.getElementById("fileNameBadge");
+  const $dropZone = document.getElementById("dropZone");
+  const $dropOverlay = document.getElementById("dropOverlay");
+
+  const $exportBtn = document.getElementById("exportBtn");
+  const $exportFormat = document.getElementById("exportFormat");
+  const $copyCleanBtn = document.getElementById("copyCleanBtn");
+  const $copyCleanBtnText = document.getElementById("copyCleanBtnText");
+  const $clearBtn = document.getElementById("clearBtn");
+  const $pasteBtn = document.getElementById("pasteBtn");
+  const $showWhitespace = document.getElementById("showWhitespace");
+  const $statusBar = document.getElementById("statusBar");
+
+  // Cards superiores
+  const $cardInvisible = document.getElementById("cardInvisible");
+  const $cardInvisibleSub = document.getElementById("cardInvisibleSub");
+  const $cardMojibake = document.getElementById("cardMojibake");
+  const $cardMojibakeSub = document.getElementById("cardMojibakeSub");
+  const $cardCodePoints = document.getElementById("cardCodePoints");
+  const $cardCodeUnitsSub = document.getElementById("cardCodeUnitsSub");
+  const $cardNormStatus = document.getElementById("cardNormStatus");
+  const $cardNormSub = document.getElementById("cardNormSub");
+
+  // Painéis de saída
+  const $xrayOutput = document.getElementById("xrayOutput");
+  const $samplesBox = document.getElementById("samplesBox");
+  const $codePointGrid = document.getElementById("codePointGrid");
+  const $cpLimitTag = document.getElementById("cpLimitTag");
+
+  const $escJs = document.getElementById("escJs");
+  const $escHex = document.getElementById("escHex");
+  const $escHtml = document.getElementById("escHtml");
+  const $escUrl = document.getElementById("escUrl");
+
+  // Abas mobile
+  const $tabEditorBtn = document.getElementById("tabEditorBtn");
+  const $tabInspectorBtn = document.getElementById("tabInspectorBtn");
+  const $editorPane = document.getElementById("editorPane");
+  const $inspectorPane = document.getElementById("inspectorPane");
+
+  const utf8Encoder = new TextEncoder();
+  const utf8DecoderFatal = new TextDecoder("utf-8", { fatal: true });
+
+  // ---------- Dicionário de Caracteres Invisíveis e Problemáticos ----------
+  const SPECIAL_CHARS = {
+    0x0000: { tag: "NUL", name: "Null Character", dangerous: true },
+    0x0009: { tag: "TAB", name: "Character Tabulation", dangerous: false },
+    0x000A: { tag: "LF", name: "Line Feed (\\n)", dangerous: false },
+    0x000D: { tag: "CR", name: "Carriage Return (\\r)", dangerous: false },
+    0x00A0: { tag: "NBSP", name: "No-Break Space", dangerous: true },
+    0x00AD: { tag: "SHY", name: "Soft Hyphen", dangerous: true },
+    0x034F: { tag: "CGJ", name: "Combining Grapheme Joiner", dangerous: true },
+    0x061C: { tag: "ALM", name: "Arabic Letter Mark", dangerous: true },
+    0x180E: { tag: "MVS", name: "Mongolian Vowel Separator", dangerous: true },
+    0x2000: { tag: "ENQUAD", name: "En Quad Space", dangerous: true },
+    0x2001: { tag: "EMQUAD", name: "Em Quad Space", dangerous: true },
+    0x2002: { tag: "ENSP", name: "En Space", dangerous: true },
+    0x2003: { tag: "EMSP", name: "Em Space", dangerous: true },
+    0x2004: { tag: "3/EM", name: "Three-Per-Em Space", dangerous: true },
+    0x2005: { tag: "4/EM", name: "Four-Per-Em Space", dangerous: true },
+    0x2006: { tag: "6/EM", name: "Six-Per-Em Space", dangerous: true },
+    0x2007: { tag: "FIGSP", name: "Figure Space", dangerous: true },
+    0x2008: { tag: "PUNCSP", name: "Punctuation Space", dangerous: true },
+    0x2009: { tag: "THINSP", name: "Thin Space", dangerous: true },
+    0x200A: { tag: "HAIRSP", name: "Hair Space", dangerous: true },
+    0x200B: { tag: "ZWSP", name: "Zero-Width Space", dangerous: true },
+    0x200C: { tag: "ZWNJ", name: "Zero-Width Non-Joiner", dangerous: true },
+    0x200D: { tag: "ZWJ", name: "Zero-Width Joiner", dangerous: false },
+    0x200E: { tag: "LRM", name: "Left-to-Right Mark", dangerous: true },
+    0x200F: { tag: "RLM", name: "Right-to-Left Mark", dangerous: true },
+    0x2028: { tag: "LS", name: "Line Separator", dangerous: true },
+    0x2029: { tag: "PS", name: "Paragraph Separator", dangerous: true },
+    0x202A: { tag: "LRE", name: "Left-to-Right Embedding", dangerous: true },
+    0x202B: { tag: "RLE", name: "Right-to-Left Embedding", dangerous: true },
+    0x202C: { tag: "PDF", name: "Pop Directional Formatting", dangerous: true },
+    0x202D: { tag: "LRO", name: "Left-to-Right Override", dangerous: true },
+    0x202E: { tag: "RLO", name: "Right-to-Left Override (Trojan Source)", dangerous: true },
+    0x202F: { tag: "NNBSP", name: "Narrow No-Break Space", dangerous: true },
+    0x205F: { tag: "MMSP", name: "Medium Mathematical Space", dangerous: true },
+    0x2060: { tag: "WJ", name: "Word Joiner", dangerous: true },
+    0x2066: { tag: "LRI", name: "Left-to-Right Isolate", dangerous: true },
+    0x2067: { tag: "RLI", name: "Right-to-Left Isolate", dangerous: true },
+    0x2068: { tag: "FSI", name: "First Strong Isolate", dangerous: true },
+    0x2069: { tag: "PDI", name: "Pop Directional Isolate", dangerous: true },
+    0x3000: { tag: "IDSP", name: "Ideographic Space", dangerous: true },
+    0xFE0F: { tag: "VS16", name: "Variation Selector-16 (Emoji)", dangerous: false },
+    0xFEFF: { tag: "BOM/ZWNBSP", name: "Byte Order Mark / Zero-Width NBSP", dangerous: true },
+    0xFFFD: { tag: "REPL", name: "Replacement Character (Corrompido)", dangerous: true }
+  };
+
+  function isDangerousInvisible(cp) {
+    if (SPECIAL_CHARS[cp]) return SPECIAL_CHARS[cp].dangerous;
+    if ((cp >= 0x00 && cp <= 0x08) || cp === 0x0B || cp === 0x0C || (cp >= 0x0E && cp <= 0x1F) || (cp >= 0x7F && cp <= 0x9F)) {
+      return true;
+    }
+    return false;
+  }
+
+  function formatCodePoint(cp) {
+    return "U+" + cp.toString(16).toUpperCase().padStart(4, "0");
+  }
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  // ---------- Alternância de Tema ----------
+  function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle("dark");
+    try {
+      localStorage.setItem("bytecounter-theme", isDark ? "dark" : "light");
+    } catch (e) {}
+  }
+
+  document.getElementById("themeToggleDesktop").addEventListener("click", toggleTheme);
+  document.getElementById("themeToggleMobile").addEventListener("click", toggleTheme);
+
+  // ---------- Abas Mobile ----------
+  function setMobileTab(tab) {
+    const activeClasses = ["bg-gh-lightAccent", "text-white", "dark:bg-gh-darkAccent", "dark:text-[#0A0D14]"];
+    const inactiveClasses = ["text-gh-lightMuted", "dark:text-gh-darkMuted"];
+
+    if (tab === "editor") {
+      $editorPane.classList.remove("hidden");
+      $editorPane.classList.add("flex");
+      $inspectorPane.classList.add("hidden", "lg:flex");
+      $inspectorPane.classList.remove("flex");
+
+      $tabEditorBtn.classList.add(...activeClasses);
+      $tabEditorBtn.classList.remove(...inactiveClasses);
+      $tabInspectorBtn.classList.remove(...activeClasses);
+      $tabInspectorBtn.classList.add(...inactiveClasses);
+    } else {
+      $editorPane.classList.add("hidden", "lg:flex");
+      $editorPane.classList.remove("flex");
+      $inspectorPane.classList.remove("hidden");
+      $inspectorPane.classList.add("flex");
+
+      $tabInspectorBtn.classList.add(...activeClasses);
+      $tabInspectorBtn.classList.remove(...inactiveClasses);
+      $tabEditorBtn.classList.remove(...activeClasses);
+      $tabEditorBtn.classList.add(...inactiveClasses);
+    }
+  }
+
+  $tabEditorBtn.addEventListener("click", () => setMobileTab("editor"));
+  $tabInspectorBtn.addEventListener("click", () => setMobileTab("inspector"));
+
+  // ---------- Motor de Detecção e Reparo de Mojibake ----------
+  // Tabela de mapeamento reverso Windows-1252 (0x80–0x9F) para bytes originais
+  const CP1252_REVERSE = {
+    0x20AC: 0x80, 0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85,
+    0x2020: 0x86, 0x2021: 0x87, 0x02C6: 0x88, 0x2030: 0x89, 0x0160: 0x8A,
+    0x2039: 0x8B, 0x0152: 0x8C, 0x017D: 0x8E, 0x2018: 0x91, 0x2019: 0x92,
+    0x201C: 0x93, 0x201D: 0x94, 0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97,
+    0x02DC: 0x98, 0x2122: 0x99, 0x0161: 0x9A, 0x203A: 0x9B, 0x0153: 0x9C,
+    0x017E: 0x9E, 0x0178: 0x9F
+  };
+
+  function charToSingleByte(ch) {
+    const cp = ch.codePointAt(0);
+    if (cp <= 0xFF) return cp;
+    if (CP1252_REVERSE[cp] !== undefined) return CP1252_REVERSE[cp];
+    return null;
+  }
+
+  // Repara tanto strings inteiras quanto segmentos mistos (ex: texto corrompido + emojis íntegros)
+  function tryRepairMojibake(text) {
+    if (!text) return { changed: false, fixed: text };
+
+    let result = "";
+    let byteBuffer = [];
+    let anyChanged = false;
+
+    const flushBuffer = () => {
+      if (byteBuffer.length === 0) return;
+      const rawStr = byteBuffer.map(b => String.fromCharCode(b)).join("");
+      try {
+        const decoded = utf8DecoderFatal.decode(new Uint8Array(byteBuffer));
+        if (decoded !== rawStr && [...decoded].length < byteBuffer.length) {
+          result += decoded;
+          anyChanged = true;
+        } else {
+          // Reconstrói caracteres originais caso não seja UTF-8 válido
+          for (const item of currentChars) result += item;
+        }
+      } catch (e) {
+        for (const item of currentChars) result += item;
+      }
+      byteBuffer = [];
+      currentChars = [];
+    };
+
+    let currentChars = [];
+    for (const ch of text) {
+      const b = charToSingleByte(ch);
+      if (b !== null) {
+        byteBuffer.push(b);
+        currentChars.push(ch);
+      } else {
+        flushBuffer();
+        result += ch;
+      }
+    }
+    flushBuffer();
+
+    return { changed: anyChanged, fixed: result };
+  }
+
+  // ---------- Geração de Escapes ----------
+  function buildEscapes(text) {
+    if (!text) {
+      return { js: "—", hex: "—", html: "—", url: "—" };
+    }
+
+    // JS / JSON (\uXXXX ou \u{XXXXX} para code points suplementares > U+FFFF)
+    let jsOut = "";
+    for (const ch of text) {
+      const cp = ch.codePointAt(0);
+      if (cp >= 0x20 && cp <= 0x7E && ch !== '"' && ch !== "\\") {
+        jsOut += ch;
+      } else if (cp === 0x0A) {
+        jsOut += "\\n";
+      } else if (cp === 0x0D) {
+        jsOut += "\\r";
+      } else if (cp === 0x09) {
+        jsOut += "\\t";
+      } else if (cp <= 0xFFFF) {
+        jsOut += "\\u" + cp.toString(16).toUpperCase().padStart(4, "0");
+      } else {
+        jsOut += `\\u{${cp.toString(16).toUpperCase()}}`;
+      }
+    }
+
+    // UTF-8 Hex Literal (\xXX)
+    const utf8Bytes = utf8Encoder.encode(text);
+    const hexOut = Array.from(utf8Bytes)
+      .map(b => "\\x" + b.toString(16).toUpperCase().padStart(2, "0"))
+      .join("");
+
+    // HTML Entities
+    let htmlOut = "";
+    for (const ch of text) {
+      const cp = ch.codePointAt(0);
+      if (cp >= 0x20 && cp <= 0x7E && ch !== "<" && ch !== ">" && ch !== "&" && ch !== '"') {
+        htmlOut += ch;
+      } else {
+        htmlOut += `&#x${cp.toString(16).toUpperCase()};`;
+      }
+    }
+
+    // URL Percent Encoding
+    let urlOut = "";
+    try {
+      urlOut = encodeURIComponent(text);
+    } catch (e) {
+      urlOut = Array.from(utf8Bytes)
+        .map(b => "%" + b.toString(16).toUpperCase().padStart(2, "0"))
+        .join("");
+    }
+
+    return { js: jsOut, hex: hexOut, html: htmlOut, url: urlOut };
+  }
+
+  // ---------- Inspeção Principal e Renderização ----------
+  let lastAnalysis = null;
+
+  function inspectText(text) {
+    const codePoints = [...text];
+    const showWs = $showWhitespace.checked;
+
+    let invisibleCount = 0;
+    const invisibleDetails = [];
+    let xrayHtml = "";
+
+    for (const ch of codePoints) {
+      const cp = ch.codePointAt(0);
+      const spec = SPECIAL_CHARS[cp];
+      const dangerous = isDangerousInvisible(cp);
+
+      if (dangerous) {
+        invisibleCount++;
+        const label = spec ? spec.tag : `CTRL-${cp.toString(16).toUpperCase().padStart(2, "0")}`;
+        const desc = spec ? spec.name : "Control Character";
+        invisibleDetails.push({ cp, tag: label, name: desc });
+
+        xrayHtml += `<span title="${desc} (${formatCodePoint(cp)})" class="inline-block mx-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-gh-lightDanger/20 text-gh-lightDanger dark:bg-gh-darkDanger/25 dark:text-gh-darkDanger border border-gh-lightDanger/40 dark:border-gh-darkDanger/40">[${label} ${formatCodePoint(cp)}]</span>`;
+      } else if (cp === 0x20) {
+        xrayHtml += showWs
+          ? `<span class="text-gh-lightMuted/50 dark:text-gh-darkMuted/50">·</span>`
+          : " ";
+      } else if (cp === 0x09) {
+        xrayHtml += showWs
+          ? `<span class="px-1 rounded text-[10px] bg-gh-lightAccent/15 text-gh-lightAccent dark:bg-gh-darkAccent/15 dark:text-gh-darkAccent">→TAB</span>`
+          : "\t";
+      } else if (cp === 0x0A) {
+        xrayHtml += showWs
+          ? `<span class="px-1 rounded text-[10px] bg-gh-lightSuccess/15 text-gh-lightSuccess dark:bg-gh-darkSuccess/15 dark:text-gh-darkSuccess">↵LF</span>\n`
+          : "\n";
+      } else if (cp === 0x0D) {
+        xrayHtml += showWs
+          ? `<span class="px-1 rounded text-[10px] bg-gh-lightWarn/20 text-gh-lightWarn dark:bg-gh-darkWarn/20 dark:text-gh-darkWarn">⏎CR</span>`
+          : "";
+      } else if (spec) {
+        xrayHtml += `<span title="${spec.name} (${formatCodePoint(cp)})" class="inline-block mx-0.5 px-1 rounded text-[10px] font-semibold bg-gh-lightPink/20 text-gh-lightPink dark:bg-gh-darkPink/20 dark:text-gh-darkPink">[${spec.tag}]</span>`;
+      } else {
+        xrayHtml += escapeHtml(ch);
+      }
+    }
+
+    // Mojibake check
+    const mojibakeCheck = tryRepairMojibake(text);
+
+    // Normalização check
+    const isNFC = text === text.normalize("NFC");
+    const isNFD = text === text.normalize("NFD");
+
+    // Atualizar Cards Superiores
+    $cardInvisible.textContent = invisibleCount.toLocaleString("pt-BR");
+    $cardInvisibleSub.textContent = invisibleCount > 0
+      ? `${invisibleCount} oculto(s) detectado(s)`
+      : "Nenhum caractere fantasma";
+
+    if (mojibakeCheck.changed) {
+      $cardMojibake.textContent = "Detectado!";
+      $cardMojibakeSub.textContent = `Sugestão: "${mojibakeCheck.fixed.slice(0, 26)}${mojibakeCheck.fixed.length > 26 ? "…" : ""}"`;
+    } else if (text.includes("\uFFFD")) {
+      $cardMojibake.textContent = "Perda (U+FFFD)";
+      $cardMojibakeSub.textContent = "Bytes inválidos substituídos";
+    } else {
+      $cardMojibake.textContent = "Íntegro";
+      $cardMojibakeSub.textContent = "Sem corrupção UTF-8/Latin-1";
+    }
+
+    $cardCodePoints.textContent = codePoints.length.toLocaleString("pt-BR");
+    $cardCodeUnitsSub.textContent = `${text.length.toLocaleString("pt-BR")} UTF-16 code units`;
+
+    if (text === "") {
+      $cardNormStatus.textContent = "NFC";
+      $cardNormSub.textContent = "Compatível com NFC/NFD";
+    } else if (isNFC && isNFD) {
+      $cardNormStatus.textContent = "NFC / NFD";
+      $cardNormSub.textContent = "Idêntico em ambas formas";
+    } else if (isNFC) {
+      $cardNormStatus.textContent = "NFC";
+      $cardNormSub.textContent = "Pré-composto (Padrão Web)";
+    } else if (isNFD) {
+      $cardNormStatus.textContent = "NFD";
+      $cardNormSub.textContent = "Decomposto (Acentos separados)";
+    } else {
+      $cardNormStatus.textContent = "Misto";
+      $cardNormSub.textContent = "Contém NFC e NFD misturados";
+    }
+
+    // Renderizar Visão Raio-X
+    if (text === "") {
+      $xrayOutput.innerHTML = `<span class="block text-center text-gh-lightMuted dark:text-gh-darkMuted italic">Aguardando entrada de texto…</span>`;
+    } else {
+      $xrayOutput.innerHTML = xrayHtml;
+    }
+
+    // Renderizar Grade de Code Points (limite de 120 cards para fluidez máxima)
+    const MAX_CARDS = 120;
+    const slice = codePoints.slice(0, MAX_CARDS);
+    $cpLimitTag.textContent = codePoints.length > MAX_CARDS
+      ? `Mostrando ${MAX_CARDS} de ${codePoints.length}`
+      : `${codePoints.length} item(ns)`;
+
+    if (slice.length === 0) {
+      $codePointGrid.innerHTML = `
+        <div class="col-span-full text-center py-6 text-xs text-gh-lightMuted dark:text-gh-darkMuted">
+          Digite ou cole um texto para inspecionar cada Unicode Code Point.
+        </div>`;
+    } else {
+      $codePointGrid.innerHTML = slice.map((ch, idx) => {
+        const cp = ch.codePointAt(0);
+        const spec = SPECIAL_CHARS[cp];
+        const dangerous = isDangerousInvisible(cp);
+        const utf8Hex = Array.from(utf8Encoder.encode(ch))
+          .map(b => b.toString(16).toUpperCase().padStart(2, "0"))
+          .join(" ");
+
+        const displayChar = spec
+          ? `[${spec.tag}]`
+          : (cp === 0x20 ? "[SPACE]" : (dangerous ? "[CTRL]" : escapeHtml(ch)));
+
+        const borderClass = dangerous
+          ? "border-gh-lightDanger dark:border-gh-darkDanger bg-gh-lightDanger/10 dark:bg-gh-darkDanger/10"
+          : (spec ? "border-gh-lightPink/60 dark:border-gh-darkPink/60 bg-gh-lightBg dark:bg-gh-darkBg" : "border-gh-lightBorder dark:border-gh-darkBorder bg-gh-lightBg dark:bg-gh-darkBg");
+
+        const charColor = dangerous
+          ? "text-gh-lightDanger dark:text-gh-darkDanger"
+          : (spec ? "text-gh-lightPink dark:text-gh-darkPink" : "text-gh-lightAccent dark:text-gh-darkAccent");
+
+        const descLabel = spec
+          ? spec.name
+          : (cp === 0x20 ? "Space (ASCII)" : (dangerous ? "Control Character" : `UTF-16 units: ${ch.length}`));
+
+        return `
+          <div title="${descLabel}" class="p-2 rounded-lg border ${borderClass} flex flex-col justify-between gap-1">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-[10px] font-mono text-gh-lightMuted dark:text-gh-darkMuted">#${idx + 1}</span>
+              <span class="text-[10px] font-mono font-semibold text-gh-lightSuccess dark:text-gh-darkSuccess">${formatCodePoint(cp)}</span>
+            </div>
+            <div class="font-mono text-sm font-bold text-center py-0.5 truncate ${charColor}">${displayChar}</div>
+            <div class="text-[10px] text-center truncate text-gh-lightMuted dark:text-gh-darkMuted">${descLabel}</div>
+            <div class="flex items-center justify-between text-[10px] font-mono text-gh-lightMuted dark:text-gh-darkMuted border-t border-gh-lightBorder/60 dark:border-gh-darkBorder/60 pt-1">
+              <span>UTF-8:</span>
+              <span class="font-semibold text-gh-lightText dark:text-gh-darkText">${utf8Hex}</span>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    // Escapes para Código
+    const escapes = buildEscapes(text);
+    $escJs.textContent = escapes.js;
+    $escHex.textContent = escapes.hex;
+    $escHtml.textContent = escapes.html;
+    $escUrl.textContent = escapes.url;
+
+    lastAnalysis = {
+      timestamp: new Date().toISOString(),
+      codePointsCount: codePoints.length,
+      utf16CodeUnits: text.length,
+      invisibleCount,
+      invisibleDetails,
+      mojibakeDetected: mojibakeCheck.changed,
+      mojibakeSuggestion: mojibakeCheck.changed ? mojibakeCheck.fixed : null,
+      normalization: { isNFC, isNFD },
+      escapes
+    };
+  }
+
+  // ---------- Orquestração ----------
+  let debounceTimer = null;
+  function runNow() {
+    clearTimeout(debounceTimer);
+    inspectText($textInput.value);
+    $statusBar.textContent = "Inspeção concluída";
+  }
+
+  function scheduleInspect() {
+    $statusBar.textContent = "Inspecionando…";
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(runNow, 80);
+  }
+
+  $textInput.addEventListener("input", scheduleInspect);
+  $showWhitespace.addEventListener("change", runNow);
+
+  // ---------- Comandos de Sanitização e Correção ----------
+  // 1. Purgar caracteres invisíveis perigosos (mantém LF, CR, TAB e espaços normais)
+  $sanitizeBtn.addEventListener("click", () => {
+    const original = $textInput.value;
+    let removed = 0;
+    const cleaned = [...original].filter((ch) => {
+      const cp = ch.codePointAt(0);
+      if (isDangerousInvisible(cp)) {
+        removed++;
+        return false;
+      }
+      return true;
+    }).join("");
+
+    $textInput.value = cleaned;
+    runNow();
+    $statusBar.textContent = removed > 0
+      ? `${removed} caractere(s) invisível(is)/oculto(s) removido(s)!`
+      : "Nenhum caractere invisível perigoso encontrado.";
+  });
+
+  // 2. Consertar Mojibake
+  $fixMojibakeBtn.addEventListener("click", () => {
+    const res = tryRepairMojibake($textInput.value);
+    if (res.changed) {
+      $textInput.value = res.fixed;
+      runNow();
+      $statusBar.textContent = "Mojibake reparado com sucesso (UTF-8 restaurado)!";
+    } else {
+      $statusBar.textContent = "Nenhum padrão clássico de Mojibake detectado para reversão.";
+    }
+  });
+
+  // 3. Converter NBSP e espaços Unicode exóticos para espaço ASCII normal (0x20)
+  $normalizeSpacesBtn.addEventListener("click", () => {
+    const before = $textInput.value;
+    const after = before.replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, " ");
+    $textInput.value = after;
+    runNow();
+    $statusBar.textContent = before !== after
+      ? "Espaços Unicode especiais convertidos para espaço ASCII (0x20)."
+      : "Todos os espaços já estão no padrão ASCII.";
+  });
+
+  // 4. Remover diacríticos (acentos) via NFD
+  $stripAccentsBtn.addEventListener("click", () => {
+    const stripped = $textInput.value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    $textInput.value = stripped;
+    runNow();
+    $statusBar.textContent = "Diacríticos e acentos removidos via decomposição NFD.";
+  });
+
+  // 5. Aplicar Normalização Unicode (NFC / NFD / NFKC / NFKD)
+  $applyNormBtn.addEventListener("click", () => {
+    const form = $normForm.value;
+    $textInput.value = $textInput.value.normalize(form);
+    runNow();
+    $statusBar.textContent = `Texto normalizado para o padrão Unicode ${form}.`;
+  });
+
+  // 6. Desfazer Duplo/Triplo Mojibake (múltiplas passadas até estabilizar)
+  $fixDoubleMojibakeBtn.addEventListener("click", () => {
+    let current = $textInput.value;
+    let passes = 0;
+    while (passes < 5) {
+      const res = tryRepairMojibake(current);
+      if (!res.changed) break;
+      current = res.fixed;
+      passes++;
+    }
+    if (passes > 0) {
+      $textInput.value = current;
+      runNow();
+      $statusBar.textContent = `Duplo-Mojibake reparado em ${passes} passada(s) de decodificação!`;
+    } else {
+      $statusBar.textContent = "Nenhuma camada adicional de Mojibake detectada.";
+    }
+  });
+
+  // 7. Converter Aspas Tipográficas, Travessões e Reticências para ASCII puro
+  $smartQuotesBtn.addEventListener("click", () => {
+    const before = $textInput.value;
+    const after = before
+      .replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB]/g, '"')
+      .replace(/[\u2018\u2019\u201A\u201B\u2039\u203A]/g, "'")
+      .replace(/[\u2013\u2014\u2015\u2212]/g, "-")
+      .replace(/\u2026/g, "...");
+    $textInput.value = after;
+    runNow();
+    $statusBar.textContent = before !== after
+      ? "Aspas tipográficas, travessões e reticências convertidos para ASCII puro."
+      : "Nenhuma pontuação tipográfica especial encontrada.";
+  });
+
+  // 8. Remover Linhas Duplicadas preservando a ordem da primeira ocorrência
+  $dedupeLinesBtn.addEventListener("click", () => {
+    const before = $textInput.value;
+    if (!before) return;
+    const hasCrlf = before.includes("\r\n");
+    const lines = before.split(/\r?\n/);
+    const seen = new Set();
+    const unique = [];
+    for (const line of lines) {
+      if (!seen.has(line)) {
+        seen.add(line);
+        unique.push(line);
+      }
+    }
+    const removedCount = lines.length - unique.length;
+    $textInput.value = unique.join(hasCrlf ? "\r\n" : "\n");
+    runNow();
+    $statusBar.textContent = removedCount > 0
+      ? `${removedCount} linha(s) duplicada(s) removida(s) (${unique.length} única(s) mantida(s)).`
+      : "Nenhuma linha duplicada encontrada.";
+  });
+
+  document.querySelectorAll(".copy-esc-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("data-copy-target");
+      const el = document.getElementById(targetId);
+      if (el && el.textContent !== "—") {
+        copyTextToClipboard(el.textContent);
+        const orig = btn.textContent;
+        btn.textContent = "Copiado!";
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      }
+    });
+  });
+
+  // ---------- Função Auxiliar de Cópia ----------
+  function copyTextToClipboard(text) {
+    let copied = false;
+    try {
+      const temp = document.createElement("textarea");
+      temp.value = text;
+      temp.setAttribute("readonly", "");
+      temp.style.position = "fixed";
+      temp.style.opacity = "0";
+      document.body.appendChild(temp);
+      temp.select();
+      temp.setSelectionRange(0, temp.value.length);
+      copied = document.execCommand("copy");
+      document.body.removeChild(temp);
+    } catch (e) {}
+
+    if (!copied && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
+  }
+
+  $copyCleanBtn.addEventListener("click", () => {
+    copyTextToClipboard($textInput.value);
+    $copyCleanBtnText.textContent = "Copiado!";
+    $statusBar.textContent = "Texto copiado para a área de transferência";
+    setTimeout(() => {
+      $copyCleanBtnText.textContent = "Copiar Texto";
+      $statusBar.textContent = "Pronto";
+    }, 1800);
+  });
+
+  // ---------- Exportar (.TXT sanitizado ou .JSON de diagnóstico) ----------
+  $exportBtn.addEventListener("click", () => {
+    const fmt = $exportFormat.value;
+    let blob;
+    let filename;
+
+    if (fmt === "json") {
+      const report = lastAnalysis || {};
+      blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json;charset=utf-8" });
+      filename = "unicode-inspector-diagnostico.json";
+    } else {
+      blob = new Blob([utf8Encoder.encode($textInput.value)], { type: "text/plain;charset=utf-8" });
+      filename = "texto-sanitizado-utf8.txt";
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    $statusBar.textContent = `Arquivo "${filename}" exportado com sucesso`;
+  });
+
+  // ---------- Limpar e Colar ----------
+  $clearBtn.addEventListener("click", () => {
+    $textInput.value = "";
+    $fileNameBadge.classList.add("hidden");
+    $fileNameBadge.textContent = "";
+    runNow();
+    $statusBar.textContent = "Editor limpo";
+    $textInput.focus();
+  });
+
+  $pasteBtn.addEventListener("click", async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        $textInput.value = text;
+        runNow();
+        $statusBar.textContent = "Texto colado da área de transferência";
+      } else {
+        $textInput.focus();
+        $statusBar.textContent = "Use Ctrl+V / Cmd+V para colar no editor";
+      }
+    } catch (e) {
+      $textInput.focus();
+      $statusBar.textContent = "Permissão de leitura negada — use Ctrl+V / Cmd+V";
+    }
+  });
+
+  // ---------- Amostras de Bugs Reais ----------
+  const BUG_SAMPLES = {
+    mojibake: "AtenÃ§Ã£o: o relatÃ³rio de JoÃ£o Silva estÃ¡ com acentuaÃ§Ã£o corrompida!",
+    zerowidth: "SELECT\u00A0*\u200B FROM\u200D usuarios\uFEFF WHERE id = 1;\u00AD",
+    nfd: "cafe\u0301 (NFD: 5 code points) vs café (NFC: 4 code points)",
+    emoji: "👨\u200D👩\u200D👧\u200D👦 + 🇧🇷"
+  };
+
+  document.querySelectorAll(".sample-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = btn.getAttribute("data-sample");
+      if (BUG_SAMPLES[key]) {
+        $textInput.value = BUG_SAMPLES[key];
+        runNow();
+      }
+    });
+  });
+
+  // ---------- Importação de Arquivo (Input e Drag & Drop) ----------
+  function loadFile(file) {
+    if (!file) return;
+    $statusBar.textContent = `Carregando "${file.name}"…`;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const uint8 = new Uint8Array(e.target.result);
+      let decodeAs = "utf-8";
+      let offset = 0;
+
+      if (uint8.length >= 3 && uint8[0] === 0xEF && uint8[1] === 0xBB && uint8[2] === 0xBF) {
+        decodeAs = "utf-8";
+        offset = 3;
+      } else if (uint8.length >= 2 && uint8[0] === 0xFF && uint8[1] === 0xFE) {
+        decodeAs = "utf-16le";
+        offset = 2;
+      } else if (uint8.length >= 2 && uint8[0] === 0xFE && uint8[1] === 0xFF) {
+        decodeAs = "utf-16be";
+        offset = 2;
+      }
+
+      const decoder = new TextDecoder(decodeAs);
+      $textInput.value = decoder.decode(uint8.subarray(offset));
+      $fileNameBadge.textContent = `${file.name} (${decodeAs.toUpperCase()})`;
+      $fileNameBadge.classList.remove("hidden");
+      runNow();
+      $statusBar.textContent = `Arquivo "${file.name}" carregado (${decodeAs.toUpperCase()}) para inspeção`;
+    };
+    reader.onerror = () => {
+      $statusBar.textContent = "Erro ao ler o arquivo.";
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  $fileInput.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      loadFile(e.target.files[0]);
+      e.target.value = "";
+    }
+  });
+
+  $dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    $dropOverlay.classList.remove("hidden");
+  });
+
+  $dropZone.addEventListener("dragleave", (e) => {
+    if (!$dropZone.contains(e.relatedTarget)) {
+      $dropOverlay.classList.add("hidden");
+    }
+  });
+
+  $dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    $dropOverlay.classList.add("hidden");
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+      loadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  // Atalho global Ctrl/Cmd + Enter
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      runNow();
+    }
+  });
+
+  // Inicialização
+  inspectText("");
+})();
+</script>
+</body>
+</html>
